@@ -56,7 +56,9 @@ chartArray = quotRes(chartArray)
 ## Change to use 'loc' functionality
 
 def bekResFac(resArray):
+    ## I think I need to get rid of this part
     resPerf = resArray.loc[:,'Performance']
+    ## end this part
     failIndex = resPerf.idxmin(axis=0)
     disValue = resPerf.min(axis=0)
     row = resPerf.shape[0]
@@ -65,7 +67,7 @@ def bekResFac(resArray):
         ## Actually make this another function and apply it as a lambda
         ## to the Array
         if (i < failIndex):
-            resPerf.loc[i,'Performance'] = np.nan
+            resPerf.loc[i] = np.nan
         else:
-            resPerf[i] = resArray['Performance'][i] * disValue / (resArray['Performance'][0]**2)
+            resPerf[i] = resArray.loc[i, 'Performance'] * disValue / (resArray.loc[0,'Performance']**2)
     return resPerf
