@@ -9,6 +9,10 @@ pLevel = 1.2
 fLevel = 0.2
 timeH = np.arange(0, timeH, resolution)
 chartArray = pd.DataFrame({'Time': timeH})
+## Stakeholder Need defined as 1
+sNeed = np.ones(len(timeH))
+sNeed = pd.DataFrame({'StakeN':sNeed})
+chartArray = pd.concat([chartArray, sNeed], axis=1)
 
 
 
@@ -56,18 +60,55 @@ chartArray = quotRes(chartArray)
 ## Change to use 'loc' functionality
 
 def bekResFac(resArray):
-    ## I think I need to get rid of this part
-    resPerf = resArray.loc[:,'Performance']
-    ## end this part
-    failIndex = resPerf.idxmin(axis=0)
-    disValue = resPerf.min(axis=0)
+    resPerf = np.zeros(resArray.shape[0])
+    resPerf = pd.Series(resPerf)
+    failIndex = resArray['Performance'].idxmin(axis=0)
+    disValue = resArray['Performance'].min(axis=0)
     row = resPerf.shape[0]
-    print(row)
     for i in range(0, row):
-        ## Actually make this another function and apply it as a lambda
-        ## to the Array
         if (i < failIndex):
             resPerf.loc[i] = np.nan
         else:
-            resPerf[i] = resArray.loc[i, 'Performance'] * disValue / (resArray.loc[0,'Performance']**2)
+            resPerf[i] = resArray.loc[i,'Performance'] * disValue / (resArray['Performance'][0]**2)
+    print(resPerf)
     return resPerf
+
+brDF = bekResFac(chartArray)
+brDF = pd.DataFrame({'BR': brDF})
+chartArray = pd.concat([chartArray, brDF], axis=1)
+
+def ayyubRes(resArray):
+    holdP = np.zeros(resArray.shape[0])
+    holdP = pd.Series(holdP)
+    holdT = np.zeros(resArray.shape[0])
+    holdT = pd.Series(holdT)
+    ## Find the area of each time sequence
+    row = resArray.shape[0]
+    def perfArea(resArray, holder):
+        for i in range(1,row):
+            ## Calculating the area from the previous point to the final
+            ## point as a triangle. Not perfect for step functions, but
+            ## close enough for now
+            stPoint = resArray.loc[i-1,'Performance'] / 2
+            endPoint = resArray.loc[i-1, 'Performance'] / 2
+            area = stPoint + endPoint
+            holder[i] = holder[i-1] + area
+        return holder
+    def targArea(resArray, holder):
+        for i in range(1,row):
+            ## Calculating the area from the previous point to the final
+            ## point as a triangle. Not perfect for step functions, but
+            ## close enough for now
+            stPoint = resArray.loc[i-1,'StakeN'] / 2
+            endPoint = resArray.loc[i-1, 'StakeN'] / 2
+            area = stPoint + endPoint
+            holder[i] = holder[i-1] + area
+        return holder
+    pA = perfArea(resArray, holdP)
+    tA = targArea(resArray, holdT)
+    ayyRes = pA / tA
+    return ayyRes
+
+ar = ayyubRes(chartArray)
+chartArray = pd.concat([chartArray,pd.DataFrame({'AR': ar})], axis=1)
+
