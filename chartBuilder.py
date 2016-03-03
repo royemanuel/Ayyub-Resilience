@@ -110,7 +110,7 @@ def bekResFac(resArray):
 ## brDF = bekResFac(chartArray)
 ## brDF = pd.DataFrame({'BR': brDF})
 
-
+## I changes these so stPoint was i-1 and endpoint was i. Is that correct?
 def perfArea(resArray):
     row = resArray.shape[0]
     holder = np.zeros(resArray.shape[0])
@@ -120,7 +120,7 @@ def perfArea(resArray):
             ## point as a triangle. Not perfect for step functions, but
             ## close enough for now
         stPoint = resArray.loc[i-1,'Performance'] / 2
-        endPoint = resArray.loc[i-1, 'Performance'] / 2
+        endPoint = resArray.loc[i, 'Performance'] / 2
         area = stPoint + endPoint
         holder[i] = holder[i-1] + area
     return holder
@@ -133,10 +133,13 @@ def targArea(resArray):
         ## point as a triangle. Not perfect for step functions, but
         ## close enough for now
         stPoint = resArray.loc[i-1,'StakeN'] / 2
-        endPoint = resArray.loc[i-1, 'StakeN'] / 2
+        endPoint = resArray.loc[i, 'StakeN'] / 2
         area = stPoint + endPoint
         holder[i] = holder[i-1] + area
     return holder
+## next to work on
+##  def vecTargArea(resArray):
+##     area = resArray['Performance']+resArray['Performance'].shift(1)
 
 def ayyubRes(resArray):
     ## Find the area of each time sequence
@@ -144,9 +147,6 @@ def ayyubRes(resArray):
     tA = targArea(resArray)
     ayyRes = pA / tA
     return ayyRes
-
-
-
 
 def nonSubRes(resArray):
     nsrArray = np.zeros(resArray.shape[0])
@@ -183,8 +183,9 @@ def baseBuild(maxTimeH, resolution, stakeNeed, *args):
 
 def resBuild(baseArray, perfFunc, *args):
     baseArray['Performance'] = buildPerf(baseArray, perfFunc, *args)
-    baseArray['QR'] = quotRes(baseArray)
-    baseArray['BekR'] = bekResFac(baseArray)
-    baseArray['AyyR'] = ayyubRes(baseArray)
-    baseArray['NonSubRes'] = nonSubRes(baseArray)
+    baseArray['Quotient Resilience'] = quotRes(baseArray)
+    baseArray['Resilience Factor'] = bekResFac(baseArray)
+    baseArray['Resilience with Substitution'] = ayyubRes(baseArray)
+    baseArray['Resilience without Substitution'] = nonSubRes(baseArray)
     return baseArray
+
