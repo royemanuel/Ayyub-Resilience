@@ -137,9 +137,23 @@ def targArea(resArray):
         area = stPoint + endPoint
         holder[i] = holder[i-1] + area
     return holder
-## next to work on
-##  def vecTargArea(resArray):
-##     area = resArray['Performance']+resArray['Performance'].shift(1)
+
+## Build a lower triangular array and add the columns to get the
+## cumulative value
+def vecSum(array):
+    df = pd.DataFrame()
+    for i in range(0, len(array)):
+        df[str(i)] = array.shift(i)
+    dSum = df.sum(axis=1)
+    return dSum
+
+def ayyubRes2(resArray):
+    p = vecSum(resArray['Performance'])
+    t = vecSum(resArray['StakeN'])
+    return p / t
+
+##def vecTargArea(resArray):
+##    area = (resArray['Performance']+resArray['Performance'].shift(1))/2
 
 def ayyubRes(resArray):
     ## Find the area of each time sequence
