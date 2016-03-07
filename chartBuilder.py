@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.stats import expon, lognorm, uniform
 ########################################################
 ##                                                    ##
 ##      Defining Variables                            ##
@@ -176,7 +177,9 @@ def nonSubRes(resArray):
     nsRes = pA / tA
     return nsRes
 
-
+#############################################
+##           Sample Chart Array to use     ##
+#############################################
 
 chartArray = statusQuo(chartArray)
 chartArray['Performance'] = buildPerf(chartArray, stepFR, fTime, rTime,
@@ -195,11 +198,66 @@ def baseBuild(maxTimeH, resolution, stakeNeed, *args):
     return pltArray
 
 
-def resBuild(baseArray, perfFunc, *args):
+def perfBuild(baseArray, perfFunc, *args):
     baseArray['Performance'] = buildPerf(baseArray, perfFunc, *args)
-    baseArray['Quotient Resilience'] = quotRes(baseArray)
-    baseArray['Resilience Factor'] = bekResFac(baseArray)
-    baseArray['Resilience with Substitution'] = ayyubRes(baseArray)
-    baseArray['Resilience without Substitution'] = nonSubRes(baseArray)
     return baseArray
 
+def resBuild(baseArray):
+    baseArray['QR'] = quotRes(baseArray)
+    baseArray['RF'] = bekResFac(baseArray)
+    baseArray['RS'] = ayyubRes(baseArray)
+    baseArray['RnS'] = nonSubRes(baseArray)
+    return baseArray
+#################################################################
+#################################################################
+##                                                             ##
+##            Build some                                       ##
+##                        Random Dataframes                    ##
+##                                     For mass building       ##
+##                                                             ##
+#################################################################
+#################################################################
+
+failSeries = expon.rvs(scale=20, size=100)
+## Calculate lognorm parameters
+muLog = np.log(15/np.sqrt(1+(10/15**2)))
+sigLog = np.sqrt(np.log(1 + 10/15**2))
+recoverSeries = np.exp(lognorm.rvs(sigLog, loc=muLog, size=100))
+failPerf = 0.1 * uniform.rvs(size=100)
+recoveryPerf = 0.9 + 0.2 * uniform.rvs(size=100)
+
+paramArray = pd.DataFrame({'FailTime' : 15, ## failSeries,
+                           'RecoverTime' : 15 + recoverSeries,
+                           'FailPerformance' : failPerf,
+                           'RecoveryPerformance' : recoveryPerf})
+
+#################################################################
+#################################################################
+##                                                             ##
+##            Run the resilience                               ##
+##                        metric builder                       ##
+##                                 through the paramArray      ##
+##                                                             ##
+#################################################################
+#################################################################
+
+def resDistribution(timeH, resolution, stakeNeed, pFunc, pArray, *args):
+    baseArray = baseBuild(timeH, resolution, stakeNeed, *args)
+    resArray = pd.DataFrame()
+    print(baseArray.tail())
+    for i in range(0, pArray.shape[0]):
+        f =  perfBuild(baseArray, pFunc, pArray.loc[i, 'FailTime'],
+                          pArray.loc[i, 'RecoverTime'],
+                          1.2,
+                          pArray.loc[i, 'FailPerformance'],
+                          pArray.loc[i, 'RecoveryPerformance'])
+        f = resBuild(f)
+        f.loc[:,'Run'] = i
+        resArray = resArray.append(f, ignore_index=True)
+        del f
+    g = pd.melt(resArray, id_vars=['Time', 'Run'],
+                value_vars=['StakeN','Performance','QR','RF','RS', 'RnS'])
+    return g
+
+h = resDistribution(100, 1, statusQuo, stepFR, paramArray)
+j = resDistribution(100, 1, statusQuo, triPerf, paramArray)
