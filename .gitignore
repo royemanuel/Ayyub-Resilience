@@ -2,3 +2,4 @@
 *.py#
 .#chartBuilder.py
 __pycache__/test.cpython-34.pyc
+~$hFile.xlsx
