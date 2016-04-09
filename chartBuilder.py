@@ -3,6 +3,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import expon, lognorm, uniform
 import seaborn as sns
+import os
+
 ######################################################
 #                                                    #
 #      Defining Variables                            #
@@ -41,24 +43,29 @@ chartArray = pd.DataFrame({'Time': timeH})
 #                                                    #
 ######################################################
 
-## Build the performance curve and append to the time
+
+# Build the performance curve and append to the time
 def buildPerf(resArray, pFunc, *args):
     return resArray['Time'].apply(lambda x: pFunc(x, *args))
 
-## Stakeholder Need defined as 1
+
+# Stakeholder Need defined as 1
 def statusQuo(resArray):
     sNeed = np.ones(len(timeH))
-    resArray['StakeN'] = pd.DataFrame({'StakeN':sNeed})
+    resArray['StakeN'] = pd.DataFrame({'StakeN': sNeed})
     return resArray
 
-## A range of status quo needs
 
-def stepFail(time, failTime, preLevel,  failLevel):
+# A range of status quo needs
+# The failure portion of a step function with no recovery
+def stepFail(time, failTime, preLevel, failLevel):
     if time < failTime:
         return preLevel
     else:
         return failLevel
 
+
+# A step function failure with a recovery
 def stepFR(time, failTime, recTime, preLevel, failLevel, recLevel):
     if time < failTime:
         return preLevel
@@ -67,21 +74,21 @@ def stepFR(time, failTime, recTime, preLevel, failLevel, recLevel):
     else:
         return recLevel
 
+
+# A linear failure to the failLevel followed by an immediate start
+# to a linear recovery
 def triPerf(time, failTime, recTime, preLevel, failLevel, recLevel):
     if time < failTime:
         return preLevel
     elif time < recTime:
-        prof = failLevel + (time - failTime)*(recLevel - failLevel) / (recTime-failTime)
+        prof = failLevel + (time - failTime)*(recLevel - failLevel) / \
+          (recTime-failTime)
         return prof
     else:
         return recLevel
 
 
-
-
 # Quotient Resilience formulation
-
-
 def quotRes(resArray):
     resPerf = resArray['Performance']
     disValue = resPerf.min(axis=0)
@@ -92,14 +99,10 @@ def quotRes(resArray):
     return qrArray
 
 
-
 # Bekera formulation for the case where there is no initial recovery
-# action portion. S_p = 1 for these assumtions, and recoery is the
+# action portion. S_p = 1 for these assumtions, and recovery is the
 # final value of the metric.
-
 # Change to use 'loc' functionality
-
-
 def bekResFac(resArray):
     resPerf = np.zeros(resArray.shape[0])
     resPerf = pd.Series(resPerf)
@@ -110,7 +113,8 @@ def bekResFac(resArray):
         if (i < failIndex):
             resPerf.loc[i] = np.nan
         else:
-            resPerf[i] = resArray.loc[i, 'Performance'] * disValue / (resArray['Performance'][0]**2)
+            resPerf[i] = resArray.loc[i, 'Performance'] * disValue / \
+              (resArray['Performance'][0]**2)
     return resPerf
 
 # brDF = bekResFac(chartArray)
@@ -123,7 +127,7 @@ def perfArea(resArray):
     row = resArray.shape[0]
     holder = np.zeros(resArray.shape[0])
     holder = pd.Series(holder)
-    for i in range(1,row):
+    for i in range(1, row):
         # Calculating the area from the previous point to the final
             # point as a triangle. Not perfect for step functions, but
             # close enough for now
@@ -200,12 +204,11 @@ def nonSubRes(resArray):
 #                                      pLevel, fLevel, rLevel)
 # chartArray['QR'] = quotRes(chartArray)
 # chartArray['BR'] = bekResFac(chartArray)
-# chartArray['RS'] = ayyubRes(chartArray)
+# chartArray['IR'] = ayyubRes(chartArray)
 # chartArray['RnS'] = nonSubRes(chartArray)
 
-# Function to tie it all together
 
-
+# baseBuild yields the time ticker and the Stakeholder Need Model 
 def baseBuild(maxTimeH, resolution, stakeNeed, *args):
     timeH = np.arange(0, maxTimeH, resolution)
     pltArray = pd.DataFrame({'Time': timeH})
@@ -213,17 +216,25 @@ def baseBuild(maxTimeH, resolution, stakeNeed, *args):
     return pltArray
 
 
+# perfBuild yields the performance of the system. Takes statusQuo,
+# stepFR, stepFail, and triPerf as arguments for the shape of the
+# performance curve
 def perfBuild(baseArray, perfFunc, *args):
     baseArray['Performance'] = buildPerf(baseArray, perfFunc, *args)
     return baseArray
 
 
+# resBuild builds columns of quotient resilience, FB resilience, and
+# ayyub resilience
 def resBuild(baseArray):
     baseArray['QR'] = quotRes(baseArray)
     baseArray['RF'] = bekResFac(baseArray)
-    baseArray['RS'] = ayyubRes(baseArray)
+    baseArray['IR'] = ayyubRes(baseArray)
     baseArray['RnS'] = nonSubRes(baseArray)
     return baseArray
+
+
+# extResBuild builds the columns of the extended QR, FB, and IR.
 ###############################################################
 ###############################################################
 #                                                             #
@@ -267,7 +278,7 @@ paramArray2 = pd.DataFrame({'FailTime': 15,
 def resDistribution(timeH, resolution, stakeNeed, pFunc, pArray, *args):
     baseArray = baseBuild(timeH, resolution, stakeNeed, *args)
     resArray = pd.DataFrame()
-    print(baseArray.tail())
+    # print(baseArray.tail())
     for i in range(0, pArray.shape[0]):
         f = perfBuild(baseArray, pFunc, pArray.loc[i, 'FailTime'],
                       pArray.loc[i, 'RecoverTime'],
@@ -279,7 +290,7 @@ def resDistribution(timeH, resolution, stakeNeed, pFunc, pArray, *args):
         resArray = resArray.append(f, ignore_index=True)
         del f
     g = pd.melt(resArray, id_vars=['Time', 'Run'],
-                value_vars=['StakeN', 'Performance', 'QR', 'RF', 'RS', 'RnS'])
+                value_vars=['StakeN', 'Performance', 'QR', 'RF', 'IR', 'RnS'])
     return g
 
 # h = resDistribution(100, 1, statusQuo, stepFR, paramArray)
@@ -302,5 +313,5 @@ def resDistributionSTK(timeH, resolution, stakeNeed, pFunc, pArray, *args):
         resArray = resArray.append(f, ignore_index=True)
         del f
     g = pd.melt(resArray, id_vars=['Time', 'Run'],
-                value_vars=['StakeN', 'Performance', 'QR', 'RF', 'RS', 'RnS'])
+                value_vars=['StakeN', 'Performance', 'QR', 'RF', 'IR', 'RnS'])
     return g
