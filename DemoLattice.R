@@ -30,3 +30,7 @@ Res <- rbind(IR, QR, RF, NS)
 f <- ggplot(aes(Res$Time, Res$value), data=Res)
 f <- f + geom_line(aes(color=variable))  + xlab("Time Horizon") + ylab("Performance Value")
 f <- f + facet_wrap(~ face, nrow = 2, ncol = 2)
+hPerfAll <- filter(hDat, variable == 'Performance')
+hPerfAll <- group_by(hPerfAll, Run)
+g <- ggplot(aes(hPerfAll$Time, hPerfAll$value, group = Run), data=hPerfAll) + geom_line() + xlab("Time Horizon") + ylab("Performance Value")
+g
