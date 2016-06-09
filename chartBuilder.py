@@ -332,10 +332,11 @@ def resDistributionSTK(timeH, resolution, stakeNeed, pFunc, pArray, *args):
     timeNow = timeNow + 'ResilienceData'
     os.makedirs(timeNow)
     os.path.join(timeNow + '/')
-    g.to_csv(timeNow)
+    g.to_csv('thisfile.csv', index=False)
+    print('Done')
     return g
 
 
 # Quick function to plot all of the trajectories in the dataframe
-# gh = sns.tsplot(data=hP, value='value', unit='Run', time='Time',
-#                 condition='variable', ci=[0,100], err_style='unit_traces')
+#  gh = sns.tsplot(data=h, value='value', unit='Run', time='Time',
+#                  condition='variable', ci=[0,100], err_style='unit_traces')
