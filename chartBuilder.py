@@ -248,13 +248,13 @@ def resBuild(baseArray):
 ###############################################################
 ###############################################################
 
-failSeries = expon.rvs(scale=20, size=100)
+failSeries = expon.rvs(scale=20, size=1000)
 # Calculate lognorm parameters
 muLog = np.log(15/np.sqrt(1+(10/15**2)))
 sigLog = np.sqrt(np.log(1 + 10/15**2))
-recoverSeries = np.exp(lognorm.rvs(sigLog, loc=muLog, size=100))
-failPerf = 0.1 * uniform.rvs(size=100)
-recoveryPerf = 0.9 + 0.2 * uniform.rvs(size=100)
+recoverSeries = np.exp(lognorm.rvs(sigLog, loc=muLog, size=1000))
+failPerf = 0.1 * uniform.rvs(size=1000)
+recoveryPerf = 0.9 + 0.2 * uniform.rvs(size=1000)
 
 
 paramArray = pd.DataFrame({'FailTime': failSeries,
@@ -338,5 +338,4 @@ def resDistributionSTK(timeH, resolution, stakeNeed, pFunc, pArray, *args):
 
 
 # Quick function to plot all of the trajectories in the dataframe
-#  gh = sns.tsplot(data=h, value='value', unit='Run', time='Time',
-#                  condition='variable', ci=[0,100], err_style='unit_traces')
+gh = sns.tsplot(data=h, value='value', unit='Run', time='Time', condition='variable')
